@@ -1,95 +1,54 @@
-﻿#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include "Window.h"  // Pokud máš vlastní třídu Window, jinak nahradíme glfw přímo
-#include "InputHandler.h"
-#include "ShaderProgram.h"
-#include "Mesh.h"
-#include "Camera.h"
-#include "Scene.h"
-
-// Inicializace okna (lze také použít Window třídu)
-Window window;
-InputHandler inputHandler;
-ShaderProgram shaderProgram;
-Scene scene;
-Camera camera;
-
-void setupScene() {
-    // Vytvoření shaderového programu
-    const char* vertexShaderSrc = R"(
-        #version 330
-        layout(location = 0) in vec3 vp;
-        uniform mat4 MVP;
-        void main() {
-            gl_Position = MVP * vec4(vp, 1.0);
-        }
-    )";
-
-    const char* fragmentShaderSrc = R"(
-        #version 330
-        out vec4 frag_colour;
-        void main() {
-            frag_colour = vec4(0.5, 0.0, 0.5, 1.0);
-        }
-    )";
-
-    if (!shaderProgram.loadShaders(vertexShaderSrc, fragmentShaderSrc)) {
-        fprintf(stderr, "ERROR: could not compile shaders\n");
-        exit(-1);
-    }
-
-    camera.setPerspective(45.0f, 4.0f / 3.0f, 0.01f, 100.0f);
-    camera.setLookAt(glm::vec3(10, 10, 10), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-
-    Mesh triangle;
-    float triangleVertices[] = {
-        0.0f,  0.0f, 0.0f,
-        1.0f,  0.0f, 0.0f,
-        0.0f, -1.0f, 0.0f
-    };
-    triangle.initialize(triangleVertices, sizeof(triangleVertices));
-
-    const Vertex b[] = {
-    { { -1.f, -0.f, .5f, 1 }, { 1, 1, 0, 1 } },
-    { { -1.f, 1.f, .5f, 1 }, { 1, 0, 0, 1 } },
-    { { 0.f, 1.f, .5f, 1 }, { 0, 0, 0, 1 } },
-    { { 0.f, 0.f, .5f, 1 }, { 0, 1, 0, 1 } },
-    };
+﻿#include "Application.h"
 
 
-    scene.setCamera(&camera);
-    scene.setShader(&shaderProgram);
-    scene.addObject(&triangle);
-}
+const char* vertex_shader =
+"#version 330\n"
+"layout(location=0) in vec3 vp;"
+"void main () {"
+"     gl_Position = vec4 (vp, 1.0);"
+"}";
 
-int main(void) {
-    // Inicializace okna
-    if (!window.initialize(800, 600, "OpenGL Scene")) {
-        fprintf(stderr, "ERROR: could not initialize GLFW or create window\n");
-        return -1;
-    }
-
-    inputHandler.initializeCallbacks(window.getWindow());
-
-
-    setupScene();
-
-
-    while (window.isWindowOpen()) {
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+const char* vertex_shader2 =
+"#version 330\n"
+"layout(location=0) in vec3 vp;"
+"layout(location=1) in vec3 vn;"
+"uniform mat4 modelMatrix;"
+"out vec3 color;"
+"void main () {"
+"     gl_Position = modelMatrix * vec4 (vp, 1.0);"
+"     color = vn;"
+"}";
 
 
-        scene.render();
 
 
-        window.pollEvents();
-        window.swapBuffers();
-    }
 
-    //scene.destroy();   // Mělo by obsahovat destrukci všech objektů
-    shaderProgram.destroy();
-    window.terminate();
+const char* fragment_shader =
+"#version 330\n"
+"out vec4 frag_colour;"
+"in vec3 color;"
+"void main () {"
+"     frag_colour = vec4 (color, 1.0);"
+"}";
 
-    return 0;
+const char* fragment_shader2 =
+"#version 330\n"
+"out vec4 frag_colour;"
+"void main () {"
+"     frag_colour = vec4 (1.0, 1.0, 0.0, 1.0);"
+"}";
+
+
+int main(void)
+{
+    Application *app = new Application;
+
+    app->init();
+
+    app->createShaders();
+
+    app->createModels();
+
+	app->run();
+	return 0;
 }
